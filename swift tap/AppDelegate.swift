@@ -22,29 +22,40 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 		//let url = "http://abc.net.au/res/streaming/audio/mp3/local_sydney.pls"
 		let playerItem = AVPlayerItem(URL: url)
 		
-		let processCallback: @convention(c) (MTAudioProcessingTap, CMItemCount, MTAudioProcessingTapFlags, UnsafeMutablePointer<AudioBufferList>, UnsafeMutablePointer<CMItemCount>, UnsafeMutablePointer<MTAudioProcessingTapFlags>) -> Void = {
-			(tap, itemCount, flags, bufferListPtr, itemCountPtr, flagsPtr) -> Void in
-			print("callback \(tap, itemCount, flags, bufferListPtr, itemCountPtr, flagsPtr)\n")
-		}
 		
 		let tapInit: @convention(c) (MTAudioProcessingTap, UnsafeMutablePointer<Void>, UnsafeMutablePointer<UnsafeMutablePointer<Void>>) -> Void = {
-			(a, b, c) -> Void in
-			print("init \(a, b, c)\n")
+			(tap, clientInfo, tapStorageOut) -> Void in
+			print("init \(tap, clientInfo, tapStorageOut)\n")
 		}
 		
-		let prepare: @convention(c) (MTAudioProcessingTap, CMItemCount, UnsafePointer<AudioStreamBasicDescription>) -> Void = {
-			(a, b, c) -> Void in
-			print("prepare: \(a, b, c)\n")
+		let tapFinalize: @convention(c) (MTAudioProcessingTap) -> Void = {
+			(tap) -> Void in
+			print("finalize \(tap)\n")
+		}
+		
+		let tapPrepare: @convention(c) (MTAudioProcessingTap, CMItemCount, UnsafePointer<AudioStreamBasicDescription>) -> Void = {
+			(tap, b, c) -> Void in
+			print("prepare: \(tap, b, c)\n")
+		}
+		
+		let tapUnprepare: @convention(c) (MTAudioProcessingTap) -> Void = {
+			(tap) -> Void in
+			print("unprepare \(tap)\n")
+		}
+
+		let tapProcess: @convention(c) (MTAudioProcessingTap, CMItemCount, MTAudioProcessingTapFlags, UnsafeMutablePointer<AudioBufferList>, UnsafeMutablePointer<CMItemCount>, UnsafeMutablePointer<MTAudioProcessingTapFlags>) -> Void = {
+			(tap, itemCount, flags, bufferListPtr, itemCountPtr, flagsPtr) -> Void in
+			print("callback \(tap, itemCount, flags, bufferListPtr, itemCountPtr, flagsPtr)\n")
 		}
 		
 		var callbacks = MTAudioProcessingTapCallbacks(
 			version: kMTAudioProcessingTapCallbacksVersion_0,
 			clientInfo: nil,
 			`init`: tapInit,
-			finalize: nil,
-			prepare: prepare,
-			unprepare: nil,
-			process: processCallback)
+			finalize: tapFinalize,
+			prepare: tapPrepare,
+			unprepare: tapUnprepare,
+			process: tapProcess)
 		
 		var tap: Unmanaged<MTAudioProcessingTap>?
 		let err = MTAudioProcessingTapCreate(nil, &callbacks, kMTAudioProcessingTapCreationFlag_PreEffects, &tap)
