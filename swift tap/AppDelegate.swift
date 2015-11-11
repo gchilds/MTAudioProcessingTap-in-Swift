@@ -17,24 +17,37 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 	var player: AVPlayer
 
 	override init() {
-		let playerItem = AVPlayerItem(URL: NSURL(string: "http://abc.net.au/res/streaming/audio/mp3/local_sydney.pls")!)
+		let url = NSURL(fileURLWithPath: "/Users/gchilds/Music/iTunes/iTunes Media/Podcasts/Silk Music Showcase/Silk Music Showcase 227 (Tom Fall Mix).mp3")
+		//let url = NSURL(string: "http://abc.net.au/res/streaming/audio/mp3/local_sydney.pls")
+		//let url = "http://abc.net.au/res/streaming/audio/mp3/local_sydney.pls"
+		let playerItem = AVPlayerItem(URL: url)
 		
-		let processCallback : @convention(c) (MTAudioProcessingTap, CMItemCount, MTAudioProcessingTapFlags, UnsafeMutablePointer<AudioBufferList>, UnsafeMutablePointer<CMItemCount>, UnsafeMutablePointer<MTAudioProcessingTapFlags>) -> Void = {
+		let processCallback: @convention(c) (MTAudioProcessingTap, CMItemCount, MTAudioProcessingTapFlags, UnsafeMutablePointer<AudioBufferList>, UnsafeMutablePointer<CMItemCount>, UnsafeMutablePointer<MTAudioProcessingTapFlags>) -> Void = {
 			(tap, itemCount, flags, bufferListPtr, itemCountPtr, flagsPtr) -> Void in
-			print("CALLBACK")
+			print("callback \(tap, itemCount, flags, bufferListPtr, itemCountPtr, flagsPtr)\n")
+		}
+		
+		let tapInit: @convention(c) (MTAudioProcessingTap, UnsafeMutablePointer<Void>, UnsafeMutablePointer<UnsafeMutablePointer<Void>>) -> Void = {
+			(a, b, c) -> Void in
+			print("init \(a, b, c)\n")
+		}
+		
+		let prepare: @convention(c) (MTAudioProcessingTap, CMItemCount, UnsafePointer<AudioStreamBasicDescription>) -> Void = {
+			(a, b, c) -> Void in
+			print("prepare: \(a, b, c)\n")
 		}
 		
 		var callbacks = MTAudioProcessingTapCallbacks(
 			version: kMTAudioProcessingTapCallbacksVersion_0,
 			clientInfo: nil,
-			`init`: nil,
+			`init`: tapInit,
 			finalize: nil,
-			prepare: nil,
+			prepare: prepare,
 			unprepare: nil,
 			process: processCallback)
 		
 		var tap: Unmanaged<MTAudioProcessingTap>?
-		let err = MTAudioProcessingTapCreate(nil, &callbacks, kMTAudioProcessingTapCreationFlag_PostEffects, &tap)
+		let err = MTAudioProcessingTapCreate(nil, &callbacks, kMTAudioProcessingTapCreationFlag_PreEffects, &tap)
 		
 		print("err: \(err)\n")
 		if err == noErr {
@@ -44,6 +57,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 		let inputParams = AVMutableAudioMixInputParameters()
 		inputParams.audioTapProcessor = tap?.takeUnretainedValue()
 		
+		// print("inputParms: \(inputParams), \(inputParams.audioTapProcessor)\n")
 		let audioMix = AVMutableAudioMix()
 		audioMix.inputParameters = [inputParams]
 		
