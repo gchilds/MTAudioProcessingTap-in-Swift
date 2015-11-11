@@ -7,12 +7,51 @@
 //
 
 import UIKit
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
 	var window: UIWindow?
 
+	var player: AVPlayer
+
+	override init() {
+		let playerItem = AVPlayerItem(URL: NSURL(string: "http://abc.net.au/res/streaming/audio/mp3/local_sydney.pls")!)
+		
+		let processCallback : @convention(c) (MTAudioProcessingTap, CMItemCount, MTAudioProcessingTapFlags, UnsafeMutablePointer<AudioBufferList>, UnsafeMutablePointer<CMItemCount>, UnsafeMutablePointer<MTAudioProcessingTapFlags>) -> Void = {
+			(tap, itemCount, flags, bufferListPtr, itemCountPtr, flagsPtr) -> Void in
+			print("CALLBACK")
+		}
+		
+		var callbacks = MTAudioProcessingTapCallbacks(
+			version: kMTAudioProcessingTapCallbacksVersion_0,
+			clientInfo: nil,
+			`init`: nil,
+			finalize: nil,
+			prepare: nil,
+			unprepare: nil,
+			process: processCallback)
+		
+		var tap: Unmanaged<MTAudioProcessingTap>?
+		let err = MTAudioProcessingTapCreate(nil, &callbacks, kMTAudioProcessingTapCreationFlag_PostEffects, &tap)
+		
+		print("err: \(err)\n")
+		if err == noErr {
+			
+		}
+
+		let inputParams = AVMutableAudioMixInputParameters()
+		inputParams.audioTapProcessor = tap?.takeUnretainedValue()
+		
+		let audioMix = AVMutableAudioMix()
+		audioMix.inputParameters = [inputParams]
+		
+		playerItem.audioMix = audioMix
+		
+		player = AVPlayer(playerItem: playerItem)
+		player.play()
+	}
 
 	func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
 		// Override point for customization after application launch.
