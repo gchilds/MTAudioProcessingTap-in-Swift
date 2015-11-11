@@ -14,9 +14,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 	var window: UIWindow?
 
-	var player: AVPlayer
+	var player: AVPlayer?
+	var tapScope: MTAudioProcessingTap?
 
-	override init() {
+	func doit() {
 		let url = NSURL(fileURLWithPath: "/Users/gchilds/Music/iTunes/iTunes Media/Podcasts/Silk Music Showcase/Silk Music Showcase 227 (Tom Fall Mix).mp3")
 		//let url = NSURL(string: "http://abc.net.au/res/streaming/audio/mp3/local_sydney.pls")
 		//let url = "http://abc.net.au/res/streaming/audio/mp3/local_sydney.pls"
@@ -26,6 +27,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 		let tapInit: @convention(c) (MTAudioProcessingTap, UnsafeMutablePointer<Void>, UnsafeMutablePointer<UnsafeMutablePointer<Void>>) -> Void = {
 			(tap, clientInfo, tapStorageOut) -> Void in
 			print("init \(tap, clientInfo, tapStorageOut)\n")
+//			tapStorageOut.assignFrom(source:clientInfo, count: 1)
+//			tapStorageOut.init(clientInfo)
 		}
 		
 		let tapFinalize: @convention(c) (MTAudioProcessingTap) -> Void = {
@@ -50,7 +53,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 		
 		var callbacks = MTAudioProcessingTapCallbacks(
 			version: kMTAudioProcessingTapCallbacksVersion_0,
-			clientInfo: nil,
+			clientInfo: UnsafeMutablePointer(Unmanaged.passUnretained(self).toOpaque()),
 			`init`: tapInit,
 			finalize: tapFinalize,
 			prepare: tapPrepare,
@@ -58,14 +61,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 			process: tapProcess)
 		
 		var tap: Unmanaged<MTAudioProcessingTap>?
-		let err = MTAudioProcessingTapCreate(nil, &callbacks, kMTAudioProcessingTapCreationFlag_PreEffects, &tap)
+		let err = MTAudioProcessingTapCreate(kCFAllocatorDefault, &callbacks, kMTAudioProcessingTapCreationFlag_PreEffects, &tap)
 		
 		print("err: \(err)\n")
 		if err == noErr {
-			
+			tapScope = tap?.takeUnretainedValue()
 		}
 
-		let inputParams = AVMutableAudioMixInputParameters()
+		let audioTrack = playerItem.asset.tracksWithMediaType(AVMediaTypeAudio).first!
+		let inputParams = AVMutableAudioMixInputParameters(track: audioTrack)
 		inputParams.audioTapProcessor = tap?.takeUnretainedValue()
 		
 		// print("inputParms: \(inputParams), \(inputParams.audioTapProcessor)\n")
@@ -75,11 +79,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 		playerItem.audioMix = audioMix
 		
 		player = AVPlayer(playerItem: playerItem)
-		player.play()
+		player?.play()
 	}
 
 	func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
 		// Override point for customization after application launch.
+		doit()
 		return true
 	}
 
