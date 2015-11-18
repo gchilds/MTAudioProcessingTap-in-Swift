@@ -15,11 +15,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 	var window: UIWindow?
 
 	var player: AVPlayer?
-	var tapScope: MTAudioProcessingTap?
 
 	func doit() {
-		let url = NSURL(fileURLWithPath: "/Users/gchilds/Music/iTunes/iTunes Media/Podcasts/Silk Music Showcase/Silk Music Showcase 227 (Tom Fall Mix).mp3")
-		//let url = NSURL(string: "http://abc.net.au/res/streaming/audio/mp3/local_sydney.pls")
+		//let url = NSURL(fileURLWithPath: "/Users/gchilds/Music/iTunes/iTunes Media/Podcasts/Silk Music Showcase/Silk Music Showcase 227 (Tom Fall Mix).mp3")
+		let url = NSURL(string: "http://abc.net.au/res/streaming/audio/mp3/local_sydney.pls")!
 		//let url = "http://abc.net.au/res/streaming/audio/mp3/local_sydney.pls"
 		let playerItem = AVPlayerItem(URL: url)
 		
@@ -50,8 +49,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 			(tap, numberFrames, flags, bufferListInOut, numberFramesOut, flagsOut) -> Void in
 			print("callback \(tap, numberFrames, flags, bufferListInOut, numberFramesOut, flagsOut)\n")
 
-			
-//			 status = MTAudioProcessingTapGetSourceAudio(tap, numberFrames, bufferListInOut, flagsOut, NULL, numberFramesOut);
+			let status = MTAudioProcessingTapGetSourceAudio(tap, numberFrames, bufferListInOut, flagsOut, nil, numberFramesOut)
+			print("get audio: \(status)\n")
 		}
 		
 		var callbacks = MTAudioProcessingTapCallbacks(
@@ -68,9 +67,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 		
 		print("err: \(err)\n")
 		if err == noErr {
-			tapScope = tap?.takeUnretainedValue()
 		}
 
+		print("tracks? \(playerItem.asset.tracks)\n")
+		
 		let audioTrack = playerItem.asset.tracksWithMediaType(AVMediaTypeAudio).first!
 		let inputParams = AVMutableAudioMixInputParameters(track: audioTrack)
 		inputParams.audioTapProcessor = tap?.takeUnretainedValue()
