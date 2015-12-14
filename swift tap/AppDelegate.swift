@@ -16,30 +16,30 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 	var player: AVPlayer?
 
-	let tapInit: @convention(c) (MTAudioProcessingTap, UnsafeMutablePointer<Void>, UnsafeMutablePointer<UnsafeMutablePointer<Void>>) -> Void = {
-		(tap, clientInfo, tapStorageOut) -> Void in
+	let tapInit: MTAudioProcessingTapInitCallback = {
+		(tap, clientInfo, tapStorageOut) in
 		print("init \(tap, clientInfo, tapStorageOut)\n")
 		//			tapStorageOut.assignFrom(source:clientInfo, count: 1)
 		//			tapStorageOut.init(clientInfo)
 	}
 	
-	let tapFinalize: @convention(c) (MTAudioProcessingTap) -> Void = {
-		(tap) -> Void in
+	let tapFinalize: MTAudioProcessingTapFinalizeCallback = {
+		(tap) in
 		print("finalize \(tap)\n")
 	}
 	
-	let tapPrepare: @convention(c) (MTAudioProcessingTap, CMItemCount, UnsafePointer<AudioStreamBasicDescription>) -> Void = {
-		(tap, b, c) -> Void in
+	let tapPrepare: MTAudioProcessingTapPrepareCallback = {
+		(tap, b, c) in
 		print("prepare: \(tap, b, c)\n")
 	}
 	
-	let tapUnprepare: @convention(c) (MTAudioProcessingTap) -> Void = {
-		(tap) -> Void in
+	let tapUnprepare: MTAudioProcessingTapUnprepareCallback = {
+		(tap) in
 		print("unprepare \(tap)\n")
 	}
 	
-	let tapProcess: @convention(c) (MTAudioProcessingTap, CMItemCount, MTAudioProcessingTapFlags, UnsafeMutablePointer<AudioBufferList>, UnsafeMutablePointer<CMItemCount>, UnsafeMutablePointer<MTAudioProcessingTapFlags>) -> Void = {
-		(tap, numberFrames, flags, bufferListInOut, numberFramesOut, flagsOut) -> Void in
+	let tapProcess: MTAudioProcessingTapProcessCallback = {
+		(tap, numberFrames, flags, bufferListInOut, numberFramesOut, flagsOut) in
 		print("callback \(tap, numberFrames, flags, bufferListInOut, numberFramesOut, flagsOut)\n")
 		
 		let status = MTAudioProcessingTapGetSourceAudio(tap, numberFrames, bufferListInOut, flagsOut, nil, numberFramesOut)
@@ -49,8 +49,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 	func doit() {
 		let url = NSURL(string: "http://live-radio01.mediahubaustralia.com/2LRW/mp3/")!
 		let playerItem = AVPlayerItem(URL: url)
-		
-		
 		
 		var callbacks = MTAudioProcessingTapCallbacks(
 			version: kMTAudioProcessingTapCallbacksVersion_0,
