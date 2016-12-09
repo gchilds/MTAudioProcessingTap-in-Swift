@@ -8,6 +8,7 @@
 
 import UIKit
 import AVFoundation
+import MediaToolbox
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -18,7 +19,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 	let tapInit: MTAudioProcessingTapInitCallback = {
 		(tap, clientInfo, tapStorageOut) in
-		print("init \(tap, clientInfo, tapStorageOut)\n")
+		
+		let nonOptionalSelf = clientInfo!.assumingMemoryBound(to: AppDelegate.self).pointee
+		
+		print("init \(tap, clientInfo, tapStorageOut, nonOptionalSelf)\n")
 		//			tapStorageOut.assignFrom(source:clientInfo, count: 1)
 		//			tapStorageOut.init(clientInfo)
 	}
@@ -47,13 +51,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 	}
 
 	func doit() {
-		let url = NSURL(string: "http://live-radio01.mediahubaustralia.com/2LRW/mp3/")!
-		let playerItem = AVPlayerItem(URL: url)
+		let url = URL(string: "http://live-radio01.mediahubaustralia.com/2LRW/mp3/")!
+		let playerItem = AVPlayerItem(url: url)
 		
 		var callbacks = MTAudioProcessingTapCallbacks(
 			version: kMTAudioProcessingTapCallbacksVersion_0,
-			clientInfo: UnsafeMutablePointer(Unmanaged.passUnretained(self).toOpaque()),
-			`init`: tapInit,
+			clientInfo: UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()),
+			init: tapInit,
 			finalize: tapFinalize,
 			prepare: tapPrepare,
 			unprepare: tapUnprepare,
@@ -68,7 +72,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 		print("tracks? \(playerItem.asset.tracks)\n")
 		
-		let audioTrack = playerItem.asset.tracksWithMediaType(AVMediaTypeAudio).first!
+		let audioTrack = playerItem.asset.tracks(withMediaType: AVMediaTypeAudio).first!
 		let inputParams = AVMutableAudioMixInputParameters(track: audioTrack)
 		inputParams.audioTapProcessor = tap?.takeUnretainedValue()
 		
@@ -82,7 +86,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 		player?.play()
 	}
 
-	func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: [NSObject: AnyObject]?) -> Bool {
+	func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
 		// Override point for customization after application launch.
 		doit()
 		return true
